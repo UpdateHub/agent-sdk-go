@@ -12,7 +12,8 @@ import (
 )
 
 type StateChangeListener struct {
-	Listeners map[string][]StateChangeCallback
+	Listeners     map[string][]StateChangeCallback
+	ErrorHandlers []ErrorCallback
 }
 
 type StateID string
@@ -38,6 +39,7 @@ const (
 )
 
 type StateChangeCallback func(action Action, state *State)
+type ErrorCallback func(error string)
 
 type State struct {
 	ID   StateID
@@ -67,10 +69,21 @@ func (sc *StateChangeListener) On(action Action, state StateID, cb StateChangeCa
 	sc.Listeners[name] = append(sc.Listeners[name], cb)
 }
 
+// OnError executes `cb` on errors occurs
+func (sc *StateChangeListener) OnError(cb ErrorCallback) {
+	sc.ErrorHandlers = append(sc.ErrorHandlers, cb)
+}
+
 func (sc *StateChangeListener) emit(c net.Conn, action, state string) {
 	name := strings.Join([]string{action, "_", state}, "")
 	for _, cb := range sc.Listeners[name] {
 		cb(Action(action), &State{ID: StateID(state), conn: c})
+	}
+}
+
+func (sc *StateChangeListener) throwError(error string) {
+	for _, cb := range sc.ErrorHandlers {
+		cb(error)
 	}
 }
 
@@ -119,6 +132,12 @@ func (uh *StateChangeListener) handleConn(c net.Conn) {
 		}
 
 		parts := strings.Split(strings.Trim(string(bytes), "\n"), " ")
+		if parts[0] == "error" && len(parts) > 1 {
+			uh.throwError(strings.Join(parts[1:], " "))
+			c.Close()
+			continue
+		}
+
 		if len(parts) < 2 {
 			c.Close()
 			continue
