@@ -17,6 +17,10 @@ func main() {
 		state.Cancel()
 	})
 
+	l.OnError(func(error string) {
+		fmt.Println(error)
+	})
+
 	err := l.Listen()
 	if err != nil {
 		log.Fatal(err)
