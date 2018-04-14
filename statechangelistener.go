@@ -89,7 +89,7 @@ func (sc *StateChangeListener) throwError(error string) {
 
 // Listen for state changes of updatehub agent
 func (uh *StateChangeListener) Listen() error {
-	_, err := os.Stat("/usr/share/updatehub/state-change-callbacks.d/10-updatehub-sdk-integration")
+	_, err := os.Stat("/usr/share/updatehub/state-change-callbacks.d/10-updatehub-sdk-statechange-trigger")
 	if err != nil && os.IsNotExist(err) {
 		panic("updatehub-sdk-statechange-trigger not found!")
 	}
