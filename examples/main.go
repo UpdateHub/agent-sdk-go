@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/updatehub/agent-sdk-go"
+	"github.com/UpdateHub/agent-sdk-go"
 )
 
 func main() {

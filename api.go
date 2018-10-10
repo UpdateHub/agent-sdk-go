@@ -5,8 +5,8 @@ import (
 	"fmt"
 
 	"github.com/parnurzeal/gorequest"
-	"github.com/updatehub/updatehub/metadata"
-	"github.com/updatehub/updatehub/updatehub"
+	"github.com/UpdateHub/updatehub/metadata"
+	"github.com/UpdateHub/updatehub/updatehub"
 )
 
 type Client struct {
