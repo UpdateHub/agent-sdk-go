@@ -1,26 +1,21 @@
-hash: b7b8df2f416625abe328b0e2a651f4a3171c18bc0624d3d6e3bacc4837d410a7
-updated: 2018-04-04T13:53:05.915062317-03:00
+hash: 004370af4c503eb37888129cc6a2754df146cd9ee3f8cc77f8651ae31caae92a
+updated: 2018-10-10T17:14:46.483206051-03:00
 imports:
 - name: github.com/anacrolix/missinggo
-  version: 081ada5bb4413ac4f42cf047a8ee485b228778a0
+  version: f9a329340c5303f1977dcb9efb0918b34437a003
   subpackages:
   - httptoo
+  - mime
 - name: github.com/bradfitz/iter
   version: 454541ec3da2a73fc34fd049b19ee5777bf19345
-- name: github.com/fatih/color
-  version: 5df930a27be2502f99b292b7cc09ebad4d0891f4
 - name: github.com/go-ini/ini
-  version: 7ddae1ffd13421bb85b0d127fac9a895d44475e5
+  version: cec2bdc49009247305a260b082a18e802d0fe292
 - name: github.com/hokaccha/go-prettyjson
-  version: e6b9231a2b1cc5798b336fdbf99c16cd8ad1e0c9
-- name: github.com/mattn/go-colorable
-  version: 5411d3eea5978e6cdc258b30de592b60df6aba96
-  repo: https://github.com/mattn/go-colorable
-- name: github.com/mattn/go-isatty
-  version: 57fdcb988a5c543893cc61bce354a6e24ab70022
-  repo: https://github.com/mattn/go-isatty
+  version: d229c224a219dcf41e9d2af4684b9782f33f5eb7
+- name: github.com/huandu/xstrings
+  version: 7bb0250b58e5c15670406e6f93ffda43281305b1
 - name: github.com/mattn/go-shellwords
-  version: 95c860c1895b21b58903abdd1d9c591560b0601c
+  version: f8471b0a71ded0ab910825ee2cf230f25de000f1
 - name: github.com/moul/http2curl
   version: 9ac6cf4d929b2fa8fd2d2e6dec5bb0feb4f4911d
 - name: github.com/OSSystems/pkg
@@ -30,17 +25,17 @@ imports:
 - name: github.com/parnurzeal/gorequest
   version: a578a48e8d6ca8b01a3b18314c43c6716bb5f5a3
 - name: github.com/pkg/errors
-  version: f15c970de5b76fac0b59abb32d62c17cc7bed265
+  version: 816c9085562cd7ee03e7f8188a1cfd942858cded
 - name: github.com/sirupsen/logrus
-  version: c155da19408a8799da419ed3eeb0cb5db0ad5dbc
+  version: 75068beb13ada9c0ddde611f678523fda7352650
   subpackages:
   - hooks/test
 - name: github.com/spf13/afero
-  version: 5660eeed305fe5f69c8fc6cf899132a459a97064
+  version: 787d034dfe70e44075ccc060d346146ef53270ad
   subpackages:
   - mem
-- name: github.com/updatehub/updatehub
-  version: dbf928392c9c7d21ba7fd717cac0785d9e3e6753
+- name: github.com/UpdateHub/updatehub
+  version: 1d56308311f74d4781c671bdc5aa70e6462d1a25
   subpackages:
   - activeinactive
   - client
@@ -52,22 +47,20 @@ imports:
   - updatehub
   - utils
 - name: golang.org/x/crypto
-  version: 2509b142fb2b797aa7587dad548f113b2c0f20ce
+  version: 7f39a6fea4fe9364fb61e1def6a268a51b4f3a06
   subpackages:
   - ssh/terminal
 - name: golang.org/x/net
-  version: 4b14673ba32bee7f5ac0f990a48f033919fd418b
+  version: db08ff08e8622530d9ed3a0e8ac279f6d4c02196
   subpackages:
-  - context
   - publicsuffix
 - name: golang.org/x/sys
-  version: e24f485414aeafb646f6fca458b0bf869c0880a1
-  repo: https://go.googlesource.com/sys
+  version: ad87a3a340fa7f3bed189293fbfa7a9b7e021ae1
   subpackages:
   - unix
   - windows
 - name: golang.org/x/text
-  version: 6eab0e8f74e86c598ec3b6fad4888e0c11482d48
+  version: 5cec4b58c438bd98288aeb248bab2c1840713d21
   subpackages:
   - transform
   - unicode/norm
