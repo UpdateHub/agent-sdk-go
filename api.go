@@ -37,21 +37,23 @@ func NewClient() *Client {
 
 // Probe default server address for update
 func (c *Client) Probe() (*ProbeResponse, error) {
-	return c.probe("")
+	return c.probe("", false)
 }
 
 // ProbeCustomServer probe custom server address for update
-func (c *Client) ProbeCustomServer(serverAddress string) (*ProbeResponse, error) {
-	return c.probe(serverAddress)
+func (c *Client) ProbeCustomServer(serverAddress string, ignoreProbeASAP bool) (*ProbeResponse, error) {
+	return c.probe(serverAddress, ignoreProbeASAP)
 }
 
-func (c *Client) probe(serverAddress string) (*ProbeResponse, error) {
+func (c *Client) probe(serverAddress string, ignoreProbeASAP bool) (*ProbeResponse, error) {
 	var probe ProbeResponse
 
 	var req struct {
-		ServerAddress string `json:"server-address"`
+		ServerAddress   string `json:"server-address"`
+		IgnoreProbeASAP bool   `json:"ignore-probe-asap"`
 	}
 	req.ServerAddress = serverAddress
+	req.IgnoreProbeASAP = ignoreProbeASAP
 
 	_, _, errs := gorequest.New().Post(buildURL("/probe")).Send(req).EndStruct(&probe)
 	if len(errs) > 0 {
