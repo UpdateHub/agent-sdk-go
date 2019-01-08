@@ -4,9 +4,9 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/parnurzeal/gorequest"
 	"github.com/UpdateHub/updatehub/metadata"
 	"github.com/UpdateHub/updatehub/updatehub"
+	"github.com/parnurzeal/gorequest"
 )
 
 type Client struct {
