@@ -3,11 +3,14 @@ package updatehub
 import (
 	"encoding/json"
 	"fmt"
+	"net/url"
 
 	"github.com/UpdateHub/updatehub/metadata"
 	"github.com/UpdateHub/updatehub/updatehub"
 	"github.com/parnurzeal/gorequest"
 )
+
+var DefaultHost = updatehub.DefaultSettings.ListenSocket
 
 type Client struct {
 }
@@ -93,5 +96,10 @@ func (c *Client) GetLogs() ([]LogEntry, error) {
 }
 
 func buildURL(path string) string {
-	return fmt.Sprintf("http://localhost:8080/%s", path[1:])
+	u, err := url.Parse(DefaultHost)
+	if err != nil {
+		panic(err)
+	}
+
+	return fmt.Sprintf("http://%s/%s", u.Host, path[1:])
 }
