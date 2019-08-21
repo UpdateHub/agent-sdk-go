@@ -1,3 +1,11 @@
+/*
+UpdateHub
+Copyright (C) 2019
+O.S. Systems Sofware LTDA: contato@ossystems.com.br
+
+SPDX-License-Identifier: Apache-2.0
+*/
+
 package updatehub
 
 import (
