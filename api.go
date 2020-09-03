@@ -5,32 +5,125 @@ import (
 	"fmt"
 	"net/url"
 
-	"github.com/UpdateHub/updatehub/metadata"
-	"github.com/UpdateHub/updatehub/updatehub"
 	"github.com/parnurzeal/gorequest"
 )
 
-var DefaultHost = updatehub.DefaultSettings.ListenSocket
+type ProbeResponse interface{}
+
+const (
+	Updating = "updating"
+	NoUpdate = "no_update"
+	TryAgain = "try_again"
+)
+
+type APIState string
+
+const (
+	Park                = "park"
+	EntryPoint          = "entry_point"
+	Poll                = "poll"
+	Validation          = "validation"
+	Download            = "download"
+	Install             = "install"
+	Reboot              = "reboot"
+	DirectDownload      = "direct_download"
+	PrepareLocalInstall = "prepare_local_install"
+	Error               = "error"
+)
 
 type Client struct {
 }
 
-type AgentInfo struct {
-	Version  string                    `json:"version"`
-	Config   updatehub.Settings        `json:"config"`
-	Firmware metadata.FirmwareMetadata `json:"firmware"`
+type Metadata struct {
+	Metadata string `json:"metadata"`
 }
 
-type LogEntry struct {
+type Network struct {
+	ServerAddress string `json:"server_address"`
+	ListenSocket  string `json:"listen_socket"`
+}
+
+type Polling struct {
+	Interval string `json:"interval"`
+	Enabled  bool   `json:"enabled"`
+}
+
+type Storage struct {
+	ReadOnly        bool   `json:"read_only"`
+	RuntimeSettings string `json:"runtime_settings"`
+}
+
+type Update struct {
+	DownloadDir           string   `json:"download_dir"`
+	SupportedInstallModes []string `json:"supported_install_modes"`
+}
+
+type ServerAddress struct {
+	Custom string `json:"custom"`
+}
+
+type DeviceAttributes struct {
+	Attr1 string `json:"attr1"`
+	Attr2 string `json:"attr2"`
+}
+
+type DeviceIdentity struct {
+	ID1 string `json:"id1"`
+	ID2 string `json:"id2"`
+}
+
+type Firmware struct {
+	DeviceAttributes DeviceAttributes `json:"device_attributes"`
+	DeviceIdentity   DeviceIdentity   `json:"device_identity"`
+	Hardware         string           `json:"hardware"`
+	PubKey           string           `json:"pub_key"`
+	Version          string           `json:"version"`
+}
+
+type UpdatePackage struct {
+	AppliedPackageUid      string `json:"applied_package_uid"`
+	UpdgradeToInstallation string `json:"upgrade_to_installation"`
+}
+
+type Settings struct {
+	Firmware Metadata `json:"firmware"`
+	Network  Network  `json:"network"`
+	Polling  Polling  `json:"polling"`
+	Storage  Storage  `json:"storage"`
+	Update   Update   `json:"update"`
+}
+
+type RuntimeSettings struct {
+	Path       string        `json:"path"`
+	Persistent bool          `json:"persistent"`
+	Polling    PollingLog    `json:"polling"`
+	Update     UpdatePackage `json:"update"`
+}
+
+type PollingLog struct {
+	Last          string        `json:"last"`
+	Now           bool          `json:"now"`
+	Retries       int64         `json:"retries"`
+	ServerAddress ServerAddress `json:"server_address"`
+}
+
+type AgentInfo struct {
+	Config          Settings        `json:"config"`
+	Firmware        Firmware        `json:"firmware"`
+	RuntimeSettings RuntimeSettings `json:"runtime_settings"`
+	State           APIState        `json:"state"`
+	Version         string          `json:"version"`
+}
+
+type Entry struct {
 	Data    interface{} `json:"data"`
 	Level   string      `json:"level"`
 	Message string      `json:"message"`
 	Time    string      `json:"time"`
 }
 
-type ProbeResponse struct {
-	UpdateAvailable bool `json:"update-available"`
-	TryAgainIn      int  `json:"try-again-in"`
+type Log struct {
+	Entries []Entry `json:"entries"`
 }
 
 // NewClient instantiates a new updatehub agent client
@@ -38,29 +131,23 @@ func NewClient() *Client {
 	return &Client{}
 }
 
-// Probe default server address for update
-func (c *Client) Probe() (*ProbeResponse, error) {
-	return c.probe("", false)
-}
-
-// ProbeCustomServer probe custom server address for update
-func (c *Client) ProbeCustomServer(serverAddress string, ignoreProbeASAP bool) (*ProbeResponse, error) {
-	return c.probe(serverAddress, ignoreProbeASAP)
-}
-
-func (c *Client) probe(serverAddress string, ignoreProbeASAP bool) (*ProbeResponse, error) {
+// Probe server address for update
+func (c *Client) Probe(serverAddress string) (*ProbeResponse, error) {
 	var probe ProbeResponse
 
 	var req struct {
-		ServerAddress   string `json:"server-address"`
-		IgnoreProbeASAP bool   `json:"ignore-probe-asap"`
+		ServerAddress string `json:"custom_server"`
 	}
 	req.ServerAddress = serverAddress
-	req.IgnoreProbeASAP = ignoreProbeASAP
 
-	_, _, errs := gorequest.New().Post(buildURL("/probe")).Send(req).EndStruct(&probe)
+	_, body, errs := gorequest.New().Post(buildURL("/probe")).Send(req).EndStruct(&probe)
 	if len(errs) > 0 {
 		return nil, errs[0]
+	}
+
+	err := json.Unmarshal([]byte(body), &probe)
+	if err != nil {
+		return nil, err
 	}
 
 	return &probe, nil
@@ -79,27 +166,71 @@ func (c *Client) GetInfo() (*AgentInfo, error) {
 }
 
 // GetLogs get updatehub agent log entries
-func (c *Client) GetLogs() ([]LogEntry, error) {
+func (c *Client) GetLogs() (*Log, error) {
 	_, body, errs := gorequest.New().Get(buildURL("/log")).End()
 	if len(errs) > 0 {
 		return nil, errs[0]
 	}
 
-	var entries []LogEntry
+	var log Log
 
-	err := json.Unmarshal([]byte(body), &entries)
+	err := json.Unmarshal([]byte(body), &log)
 	if err != nil {
 		return nil, err
 	}
 
-	return entries, nil
+	return &log, nil
+}
+
+// RemoteInstall trigger the installation of a package from a direct URL
+func (c *Client) RemoteInstall(serverAddress string) (*APIState, error) {
+	var state APIState
+
+	var req struct {
+		URL string `json:"url"`
+	}
+	req.URL = serverAddress
+
+	_, body, errs := gorequest.New().Post(buildURL("/remote_install")).Send(req).EndStruct(&state)
+	if len(errs) > 0 {
+		return nil, errs[0]
+	}
+
+	err := json.Unmarshal([]byte(body), &state)
+	if err != nil {
+		return nil, err
+	}
+
+	return &state, nil
+}
+
+// LocalInstall trigger the installation of a local package
+func (c *Client) LocalInstall(filePath string) (*APIState, error) {
+	var state APIState
+
+	var req struct {
+		FilePath string `json:"file"`
+	}
+	req.FilePath = filePath
+
+	_, body, errs := gorequest.New().Post(buildURL("/local_install")).Send(req).EndStruct(&state)
+	if len(errs) > 0 {
+		return nil, errs[0]
+	}
+
+	err := json.Unmarshal([]byte(body), &state)
+	if err != nil {
+		return nil, err
+	}
+
+	return &state, nil
 }
 
 func buildURL(path string) string {
-	u, err := url.Parse(DefaultHost)
+	u, err := url.Parse("localhost:8080")
 	if err != nil {
 		panic(err)
 	}
 
-	return fmt.Sprintf("http://%s/%s", u.Host, path[1:])
+	return fmt.Sprintf("http://%s%s", u, path)
 }

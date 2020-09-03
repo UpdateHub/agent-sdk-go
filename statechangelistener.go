@@ -10,14 +10,17 @@ package updatehub
 
 import (
 	"bufio"
+	"fmt"
 	"log"
 	"net"
 	"os"
 	"os/signal"
-	"strconv"
 	"strings"
 	"syscall"
 )
+
+const SDKTriggerFilename string = "/usr/share/updatehub/state-change-callbacks.d/10-updatehub-sdk-statechange-trigger"
+const SocketPath string = "updatehub-statechange.sock"
 
 type StateChangeListener struct {
 	Listeners     map[string][]StateChangeCallback
@@ -27,26 +30,13 @@ type StateChangeListener struct {
 type StateID string
 
 const (
-	StateIdle        = "idle"
-	StatePoll        = "poll"
-	StateProbe       = "probe"
-	StateDownloading = "downloading"
-	StateDownloaded  = "downloaded"
-	StateInstalling  = "installing"
-	StateInstalled   = "installed"
-	StateExit        = "exit"
-	StateError       = "error"
-	StateRebooting   = "rebooting"
+	StateDownload = "download"
+	StateInstall  = "install"
+	StateReboot   = "reboot"
+	StateError    = "error"
 )
 
-type Action string
-
-const (
-	ActionEnter = "enter"
-	ActionLeave = "leave"
-)
-
-type StateChangeCallback func(action Action, state *State)
+type StateChangeCallback func(state *State)
 type ErrorCallback func(error string)
 
 type State struct {
@@ -54,15 +44,23 @@ type State struct {
 	conn net.Conn
 }
 
+// Downloading State
+func (s State) Downloading() {
+	s.conn.Write([]byte("downloading"))
+}
+
+// Rebooting State
+func (s State) Rebooting() {
+	s.conn.Write([]byte("rebooting"))
+}
+
 // Cancel state
 func (s State) Cancel() {
 	s.conn.Write([]byte("cancel"))
 }
 
-// TryAgain state in `n` seconds
-func (s State) TryAgain(n int) {
-	s.conn.Write([]byte(strings.Join([]string{"try_again", strconv.Itoa(n)}, " ")))
-}
+// Proceed to next state
+func (s State) Proceed() {}
 
 // NewStateChangeListener instantiates a new StateChangeListener
 func NewStateChangeListener() *StateChangeListener {
@@ -72,8 +70,8 @@ func NewStateChangeListener() *StateChangeListener {
 }
 
 // On executes `cb` on enter or leave `state`
-func (sc *StateChangeListener) On(action Action, state StateID, cb StateChangeCallback) {
-	name := strings.Join([]string{string(action), "_", string(state)}, "")
+func (sc *StateChangeListener) On(state StateID, cb StateChangeCallback) {
+	name := strings.Join([]string{string(state)}, "")
 	sc.Listeners[name] = append(sc.Listeners[name], cb)
 }
 
@@ -82,10 +80,10 @@ func (sc *StateChangeListener) OnError(cb ErrorCallback) {
 	sc.ErrorHandlers = append(sc.ErrorHandlers, cb)
 }
 
-func (sc *StateChangeListener) emit(c net.Conn, action, state string) {
-	name := strings.Join([]string{action, "_", state}, "")
+func (sc *StateChangeListener) emit(c net.Conn, state string) {
+	name := strings.Join([]string{state}, "")
 	for _, cb := range sc.Listeners[name] {
-		cb(Action(action), &State{ID: StateID(state), conn: c})
+		cb(&State{ID: StateID(state), conn: c})
 	}
 }
 
@@ -97,17 +95,17 @@ func (sc *StateChangeListener) throwError(error string) {
 
 // Listen for state changes of updatehub agent
 func (sc *StateChangeListener) Listen() error {
-	_, err := os.Stat("/usr/share/updatehub/state-change-callbacks.d/10-updatehub-sdk-statechange-trigger")
+	file, err := os.Stat(SDKTriggerFilename)
 	if err != nil && os.IsNotExist(err) {
-		panic("updatehub-sdk-statechange-trigger not found!")
+		fmt.Println("WARNING: updatehub-sdk-statechange-trigger not found on", SDKTriggerFilename)
 	}
 
-	err = os.Remove("/run/updatehub-statechange.sock")
+	err = os.Remove(SDKTriggerFilename)
 	if err != nil && !os.IsNotExist(err) {
 		return err
 	}
 
-	ln, err := net.Listen("unix", "/run/updatehub-statechange.sock")
+	ln, err := createListener(file)
 	if err != nil {
 		return err
 	}
@@ -146,13 +144,22 @@ func (sc *StateChangeListener) handleConn(c net.Conn) {
 			continue
 		}
 
-		if len(parts) < 2 {
+		if len(parts) < 1 {
 			c.Close()
 			continue
 		}
 
-		sc.emit(c, parts[0], parts[1])
+		sc.emit(c, parts[0])
 
 		c.Close()
 	}
+}
+
+func createListener(file os.FileInfo) (net.Listener, error) {
+	if file != nil {
+		ln, err := net.Listen("unix", "/run/"+SocketPath)
+		return ln, err
+	}
+	ln, err := net.Listen("unix", SocketPath)
+	return ln, err
 }
