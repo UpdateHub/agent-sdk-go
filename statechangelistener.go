@@ -96,7 +96,7 @@ func (sc *StateChangeListener) throwError(error string) {
 }
 
 // Listen for state changes of updatehub agent
-func (uh *StateChangeListener) Listen() error {
+func (sc *StateChangeListener) Listen() error {
 	_, err := os.Stat("/usr/share/updatehub/state-change-callbacks.d/10-updatehub-sdk-statechange-trigger")
 	if err != nil && os.IsNotExist(err) {
 		panic("updatehub-sdk-statechange-trigger not found!")
@@ -126,11 +126,11 @@ func (uh *StateChangeListener) Listen() error {
 			log.Fatal("Accept error: ", err)
 		}
 
-		uh.handleConn(fd)
+		sc.handleConn(fd)
 	}
 }
 
-func (uh *StateChangeListener) handleConn(c net.Conn) {
+func (sc *StateChangeListener) handleConn(c net.Conn) {
 	buf := bufio.NewReader(c)
 
 	for {
@@ -141,7 +141,7 @@ func (uh *StateChangeListener) handleConn(c net.Conn) {
 
 		parts := strings.Split(strings.Trim(string(bytes), "\n"), " ")
 		if parts[0] == "error" && len(parts) > 1 {
-			uh.throwError(strings.Join(parts[1:], " "))
+			sc.throwError(strings.Join(parts[1:], " "))
 			c.Close()
 			continue
 		}
@@ -151,7 +151,7 @@ func (uh *StateChangeListener) handleConn(c net.Conn) {
 			continue
 		}
 
-		uh.emit(c, parts[0], parts[1])
+		sc.emit(c, parts[0], parts[1])
 
 		c.Close()
 	}
