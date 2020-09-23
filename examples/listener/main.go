@@ -15,27 +15,22 @@ import (
 
 func main() {
 	l := updatehub.NewStateChangeListener()
+
 	l.On(updatehub.StateDownload, func(state *updatehub.State) {
-		if state.ID == updatehub.StateDownload {
-			fmt.Println("downloading state")
-		}
+		fmt.Println("downloading state")
 		fmt.Println("Canceling the command...")
 		state.Cancel()
 		fmt.Println("Done")
 	})
 
 	l.On(updatehub.StateError, func(state *updatehub.State) {
-		if state.ID == updatehub.StateError {
-			fmt.Println("Error")
-		}
+		fmt.Println("Error")
 		state.Proceed()
 		fmt.Println("Done")
 	})
 
 	l.On(updatehub.StateReboot, func(state *updatehub.State) {
-		if state.ID == updatehub.StateReboot {
-			fmt.Println("rebooting...")
-		}
+		fmt.Println("rebooting...")
 	})
 
 	err := l.Listen()
