@@ -100,7 +100,7 @@ func (sc *StateChangeListener) Listen() error {
 		fmt.Println("WARNING: updatehub-sdk-statechange-trigger not found on", SDKTriggerFilename)
 	}
 
-	err = os.Remove(SDKTriggerFilename)
+	err = os.Remove(SocketPath)
 	if err != nil && !os.IsNotExist(err) {
 		return err
 	}
