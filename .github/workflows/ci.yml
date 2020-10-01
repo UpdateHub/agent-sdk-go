@@ -40,7 +40,7 @@ jobs:
       - name: Run listener test
         run: |
           export UH_LISTENER_TEST=updatehub-statechange.sock
-          go build examples/listener/main.go; ./main &
+          go run examples/listener/main.go &
          
           while [ ! -S "$UH_LISTENER_TEST" ]; do
             sleep 1
