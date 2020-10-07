@@ -44,16 +44,6 @@ type State struct {
 	conn net.Conn
 }
 
-// Downloading State
-func (s State) Downloading() {
-	s.conn.Write([]byte("downloading"))
-}
-
-// Rebooting State
-func (s State) Rebooting() {
-	s.conn.Write([]byte("rebooting"))
-}
-
 // Cancel state
 func (s State) Cancel() {
 	s.conn.Write([]byte("cancel"))
