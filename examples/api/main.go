@@ -11,7 +11,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/UpdateHub/agent-sdk-go"
+	updatehub "github.com/UpdateHub/agent-sdk-go"
 )
 
 func main() {
@@ -78,7 +78,6 @@ func main() {
 	fmt.Println(string(remoteInstallResponse))
 
 	localInstall, err := client.LocalInstall("/tmp/update.uhu")
-
 	if err != nil {
 		log.Fatal(err)
 	}
