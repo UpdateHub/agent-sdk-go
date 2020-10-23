@@ -3,8 +3,7 @@ name: CI
 on:
   push:
     branches:
-      - master
-      - topic/test_ci
+      - v2
   pull_request:
 
 jobs:
@@ -45,12 +44,13 @@ jobs:
           while [ ! -S "$UH_LISTENER_TEST" ]; do
             sleep 1
           done
-          if [[ "$(echo "entry_point" | socat - UNIX-CONNECT:updatehub-statechange.sock)" != "" ]]; then
-            echo "Unexpected entry_point response"
-            exit 1
-          fi
+
           if [[ "$(echo "download" | socat - UNIX-CONNECT:updatehub-statechange.sock)" != "cancel" ]]; then
             echo "Unexpected download response"
+            exit 1
+          fi
+          if [[ "$(echo "install" | socat - UNIX-CONNECT:updatehub-statechange.sock)" != "" ]]; then
+            echo "Unexpected install response"
             exit 2
           fi
           if [[ "$(echo "error" | socat - UNIX-CONNECT:updatehub-statechange.sock)" != "" ]]; then
