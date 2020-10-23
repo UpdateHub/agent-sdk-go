@@ -14,26 +14,19 @@ import (
 )
 
 func main() {
-	l := updatehub.NewStateChangeListener()
+	listener := updatehub.NewStateChange()
 
-	l.On(updatehub.StateDownload, func(state *updatehub.State) {
-		fmt.Println("downloading state")
-		fmt.Println("Canceling the command...")
-		state.Cancel()
-		fmt.Println("Done")
+	listener.OnState(updatehub.StateDownload, func(handler *updatehub.Handler) {
+		fmt.Println("function called when starting the Download state; it will cancel the transition")
+		handler.Cancel()
 	})
 
-	l.On(updatehub.StateError, func(state *updatehub.State) {
-		fmt.Println("Error")
-		state.Proceed()
-		fmt.Println("Done")
+	listener.OnState(updatehub.StateInstall, func(handler *updatehub.Handler) {
+		fmt.Println("function called when starting the Install state")
+		handler.Proceed()
 	})
 
-	l.On(updatehub.StateReboot, func(state *updatehub.State) {
-		fmt.Println("rebooting...")
-	})
-
-	err := l.Listen()
+	err := listener.Listen()
 	if err != nil {
 		log.Fatal(err)
 	}
