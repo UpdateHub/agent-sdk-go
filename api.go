@@ -140,46 +140,20 @@ func (c *Client) Probe(serverAddress string) (*ProbeResponse, error) {
 	}
 	req.ServerAddress = serverAddress
 
-	_, body, errs := gorequest.New().Post(buildURL("/probe")).Send(req).EndStruct(&probe)
-	if len(errs) > 0 {
-		return nil, errs[0]
-	}
-
-	err := json.Unmarshal([]byte(body), &probe)
-	if err != nil {
-		return nil, err
-	}
-
-	return &probe, nil
+	response, err := processRequest(string("/probe"), &probe, req, "POST")
+	return response.(*ProbeResponse), err
 }
 
 // GetInfo get updatehub agent general information
 func (c *Client) GetInfo() (*AgentInfo, error) {
-	var info AgentInfo
-
-	_, _, errs := gorequest.New().Get(buildURL("/info")).EndStruct(&info)
-	if len(errs) > 0 {
-		return nil, errs[0]
-	}
-
-	return &info, nil
+	response, err := processRequest(string("/info"), &AgentInfo{}, nil, "GET")
+	return response.(*AgentInfo), err
 }
 
 // GetLogs get updatehub agent log entries
 func (c *Client) GetLogs() (*Log, error) {
-	_, body, errs := gorequest.New().Get(buildURL("/log")).End()
-	if len(errs) > 0 {
-		return nil, errs[0]
-	}
-
-	var log Log
-
-	err := json.Unmarshal([]byte(body), &log)
-	if err != nil {
-		return nil, err
-	}
-
-	return &log, nil
+	response, err := processRequest(string("/log"), &Log{}, nil, "GET")
+	return response.(*Log), err
 }
 
 // RemoteInstall trigger the installation of a package from a direct URL
@@ -191,17 +165,8 @@ func (c *Client) RemoteInstall(serverAddress string) (*APIState, error) {
 	}
 	req.URL = serverAddress
 
-	_, body, errs := gorequest.New().Post(buildURL("/remote_install")).Send(req).EndStruct(&state)
-	if len(errs) > 0 {
-		return nil, errs[0]
-	}
-
-	err := json.Unmarshal([]byte(body), &state)
-	if err != nil {
-		return nil, err
-	}
-
-	return &state, nil
+	response, err := processRequest(string("/remote_install"), &state, req, "POST")
+	return response.(*APIState), err
 }
 
 // LocalInstall trigger the installation of a local package
@@ -213,17 +178,31 @@ func (c *Client) LocalInstall(filePath string) (*APIState, error) {
 	}
 	req.FilePath = filePath
 
-	_, body, errs := gorequest.New().Post(buildURL("/local_install")).Send(req).EndStruct(&state)
+	response, err := processRequest(string("/local_install"), &state, req, "POST")
+	return response.(*APIState), err
+}
+
+func processRequest(url string, responseStruct interface{}, req interface{}, method string) (interface{}, error) {
+	var body []byte
+	var errs []error
+
+	switch method {
+	case "GET":
+		_, body, errs = gorequest.New().Get(buildURL(url)).EndStruct(&responseStruct)
+	case "POST":
+		_, body, errs = gorequest.New().Post(buildURL(url)).Send(req).EndStruct(&responseStruct)
+	}
+
 	if len(errs) > 0 {
 		return nil, errs[0]
 	}
 
-	err := json.Unmarshal([]byte(body), &state)
+	err := json.Unmarshal([]byte(body), &responseStruct)
 	if err != nil {
 		return nil, err
 	}
 
-	return &state, nil
+	return responseStruct, nil
 }
 
 func buildURL(path string) string {

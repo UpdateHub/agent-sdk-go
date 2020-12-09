@@ -17,75 +17,69 @@ import (
 func main() {
 	client := updatehub.NewClient()
 
+	logs, err := client.GetLogs()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	resp, err := json.Marshal(logs)
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println(string(resp) + "\n")
+
 	info, err := client.GetInfo()
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	infoResponse, err := json.Marshal(info)
+	resp, err = json.Marshal(info)
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	fmt.Println(string(infoResponse))
+	fmt.Println(string(resp) + "\n")
 
 	probe, err := client.Probe("")
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	probeResponse, err := json.Marshal(probe)
+	resp, err = json.Marshal(probe)
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	fmt.Println(string(probeResponse))
+	fmt.Println(string(resp) + "\n")
 
 	probeCustom, err := client.Probe("http://www.example.com:8080")
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	probeCustomResponse, err := json.Marshal(probeCustom)
+	resp, err = json.Marshal(probeCustom)
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	fmt.Println(string(probeCustomResponse))
-
-	logs, err := client.GetLogs()
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	logResponse, err := json.Marshal(logs)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	fmt.Println(string(logResponse))
+	fmt.Println(string(resp) + "\n")
 
 	remoteInstall, err := client.RemoteInstall("https://foo.bar/update.uhu")
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	remoteInstallResponse, err := json.Marshal(remoteInstall)
+	resp, err = json.Marshal(remoteInstall)
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	fmt.Println(string(remoteInstallResponse))
+	fmt.Println(string(resp) + "\n")
 
 	localInstall, err := client.LocalInstall("/tmp/update.uhu")
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	localInstallResponse, err := json.Marshal(localInstall)
+	resp, err = json.Marshal(localInstall)
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	fmt.Println(string(localInstallResponse))
+	fmt.Println(string(resp) + "\n")
 }
