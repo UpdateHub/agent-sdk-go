@@ -182,6 +182,13 @@ func (c *Client) LocalInstall(filePath string) (*APIState, error) {
 	return response.(*APIState), err
 }
 
+func (c *Client) AbortDownload() (*APIState, error) {
+	var state APIState
+
+	response, err := processRequest(string("/update/download/abort"), &state, nil, "POST")
+	return response.(*APIState), err
+}
+
 func processRequest(url string, responseStruct interface{}, req interface{}, method string) (interface{}, error) {
 	var body []byte
 	var errs []error

@@ -82,4 +82,15 @@ func main() {
 		log.Fatal(err)
 	}
 	fmt.Println(string(resp) + "\n")
+
+	abortDownload, err := client.AbortDownload()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	resp, err = json.Marshal(abortDownload)
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println(string(resp) + "\n")
 }
