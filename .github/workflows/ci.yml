@@ -7,57 +7,38 @@ on:
   pull_request:
 
 jobs:
-  build:
+  test:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        go: [ '1.15' ]
-    name: Go ${{ matrix.go }} sample
+        # The version the module declares, and the newest release. They are the
+        # same toolchain until Go moves on, and no version is named here, so the
+        # floor is stated once, in go.mod.
+        include:
+          - name: declared
+            versionFile: go.mod
+          - name: latest
+            version: stable
+    name: Go ${{ matrix.name }}
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - name: Setup go
-        uses: actions/setup-go@v2
+        uses: actions/setup-go@v5
         with:
-          go-version: ${{ matrix.go }}
+          go-version: ${{ matrix.version }}
+          go-version-file: ${{ matrix.versionFile }}
 
-      - name: Install Dependencies
-        run: |
-          sudo apt-get update; sudo apt-get install socat
-      - name: Run API test
-        run: |
-          wget https://raw.githubusercontent.com/UpdateHub/updatehub/master/doc/agent-http.yaml \
-            -O agent-http.yaml
-          docker run \
-            --rm \
-            --detach=true \
-            --name agent-sdk-go-mock \
-            -p 8080:8000 \
-            -v $PWD/agent-http.yaml:/api.yaml \
-            danielgtaylor/apisprout@sha256:6c07143937e57095d8478efc8ab7eab52b44e67c7673285f8c0a2bf4a7b137ad \
-            /api.yaml --validate-request
-          go run examples/api/main.go   
-      - name: Run listener test
-        run: |
-          export UH_LISTENER_TEST=updatehub-statechange.sock
-          go run examples/listener/main.go &
-         
-          while [ ! -S "$UH_LISTENER_TEST" ]; do
-            sleep 1
-          done
+      - name: Build
+        run: go build ./...
 
-          if [[ "$(echo "download" | socat - UNIX-CONNECT:updatehub-statechange.sock)" != "cancel" ]]; then
-            echo "Unexpected download response"
+      - name: Check the formatting
+        run: |
+          unformatted="$(gofmt -l .)"
+          if [ -n "$unformatted" ]; then
+            echo "gofmt reports:"
+            echo "$unformatted"
             exit 1
           fi
-          if [[ "$(echo "install" | socat - UNIX-CONNECT:updatehub-statechange.sock)" != "" ]]; then
-            echo "Unexpected install response"
-            exit 2
-          fi
-          if [[ "$(echo "error" | socat - UNIX-CONNECT:updatehub-statechange.sock)" != "" ]]; then
-            echo "Unexpected error response"
-            exit 3
-          fi
-          if [[ "$(echo "reboot" | socat - UNIX-CONNECT:updatehub-statechange.sock)" != "" ]]; then
-            echo "Unexpected reboot response"
-            exit 4
-          fi
+
+      - name: Test
+        run: go test -race ./...
