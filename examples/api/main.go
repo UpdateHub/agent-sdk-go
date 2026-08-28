@@ -7,90 +7,79 @@ SPDX-License-Identifier: Apache-2.0
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"log"
+	"time"
 
-	updatehub "github.com/UpdateHub/agent-sdk-go"
+	updatehub "github.com/UpdateHub/agent-sdk-go/v2"
 )
 
 func main() {
-	client := updatehub.NewClient()
-
-	logs, err := client.GetLogs()
+	// The hold is how long the client keeps the agent's turn after a call gives
+	// up, so that the next call cannot arrive beside a request the agent may
+	// still be working on.
+	client, err := updatehub.NewClient(updatehub.DefaultBaseURL, 30*time.Second, 5*time.Minute)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	resp, err := json.Marshal(logs)
+	ctx := context.Background()
+
+	logs, err := client.GetLogs(ctx)
 	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Println(string(resp) + "\n")
+	dump(logs)
 
-	info, err := client.GetInfo()
+	info, err := client.GetInfo(ctx)
 	if err != nil {
 		log.Fatal(err)
 	}
+	fmt.Println("agent version:", info.Version)
 
-	resp, err = json.Marshal(info)
-	if err != nil {
-		log.Fatal(err)
-	}
-	fmt.Println(string(resp) + "\n")
-
-	probe, err := client.Probe("")
+	// An empty custom server probes the address the agent is configured with.
+	probe, err := client.Probe(ctx, "")
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	resp, err = json.Marshal(probe)
+	switch probe.Outcome {
+	case updatehub.ProbeUpdating:
+		fmt.Println("an update is available")
+	case updatehub.ProbeNoUpdate:
+		fmt.Println("no update is available")
+	case updatehub.ProbeTryAgain:
+		fmt.Println("the server asked for a back-off of", probe.TryAgainIn)
+	case updatehub.ProbeBusy:
+		fmt.Println("the agent did not probe; it is in the", probe.BusyState, "state")
+	}
+
+	remoteInstall, err := client.RemoteInstall(ctx, "https://foo.bar/update.uhupkg")
 	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Println(string(resp) + "\n")
+	dump(remoteInstall)
 
-	probeCustom, err := client.Probe("http://www.example.com:8080")
+	localInstall, err := client.LocalInstall(ctx, "/tmp/update.uhupkg")
 	if err != nil {
 		log.Fatal(err)
 	}
+	dump(localInstall)
 
-	resp, err = json.Marshal(probeCustom)
+	abortDownload, err := client.AbortDownload(ctx)
 	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Println(string(resp) + "\n")
+	dump(abortDownload)
+}
 
-	remoteInstall, err := client.RemoteInstall("https://foo.bar/update.uhu")
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	resp, err = json.Marshal(remoteInstall)
-	if err != nil {
-		log.Fatal(err)
-	}
-	fmt.Println(string(resp) + "\n")
-
-	localInstall, err := client.LocalInstall("/tmp/update.uhu")
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	resp, err = json.Marshal(localInstall)
-	if err != nil {
-		log.Fatal(err)
-	}
-	fmt.Println(string(resp) + "\n")
-
-	abortDownload, err := client.AbortDownload()
+func dump(value any) {
+	encoded, err := json.Marshal(value)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	resp, err = json.Marshal(abortDownload)
-	if err != nil {
-		log.Fatal(err)
-	}
-	fmt.Println(string(resp) + "\n")
+	fmt.Println(string(encoded))
 }
